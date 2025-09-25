@@ -20,7 +20,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'centroid_nav = centroid_nav.centroid_nav:main'
+            'centroid_nav = centroid_nav.centroid_nav:main',
+            'navigation = centroid_nav.navigation:main',
+            'follow_point = centroid_nav.follow_point:main',
         ],
     },
 )

@@ -1,5 +1,4 @@
 import rclpy  # importa la librería de Ros2
-import matplotlib.pyplot as plt
 import numpy as np
 import math
 from geometry_msgs.msg import Twist  # importa un paquete de dimensiones, ángulos. Twist es x y z
@@ -7,9 +6,9 @@ from sensor_msgs.msg import LaserScan
 from rclpy.node import Node  # importa una entidad que procesa la info de Ros2
 
 
-class CentroidNav(Node):
+class Navigation(Node):
     def __init__(self):
-        super().__init__('centroid_nav')
+        super().__init__('navigation')
         self.publisher_vel = self.create_publisher(Twist, 'cmd_vel', 10)
         self.twist = Twist()
         self.timer = self.create_timer(0.05, self.control)
@@ -25,12 +24,6 @@ class CentroidNav(Node):
         self.eV_prev = 0.0
 
         self.subscriber_scan = self.create_subscription(LaserScan, "scan", self.callbackScan, 10)
-        self.subscriber_scan
-
-        # Turn on interactive mode for Matplotlib
-        plt.ion()
-        # Create a figure and axis object to reuse
-        self.fig, self.ax = plt.subplots()
 
     def callbackScan(self, data):
         # Store raw data properties
@@ -81,22 +74,6 @@ class CentroidNav(Node):
             self.cx = 0.0
             self.cy = 0.0
 
-        # Plotting section
-        if len(front_angles) > len(front_ranges):
-            front_angles = front_angles[:len(front_ranges)]
-
-        self.ax.clear()
-        self.ax.plot(front_angles, front_ranges, label='LiDAR Scan (Front)')
-        self.ax.plot(self.cx, self.cy, 'ro', label='Centroid (cx)')
-        # self.ax.axvline(x=self.cx, color='r', linestyle='--', linewidth=1)
-        self.ax.set_xlabel('Angle (radians)')
-        self.ax.set_ylabel('Range (meters)')
-        self.ax.set_title('Dynamic LiDAR Scan Data: Range vs. Angle')
-        self.ax.grid(True)
-        self.ax.legend()
-        self.ax.set_ylim(0, 11)
-        plt.pause(0.01)
-
     def control(self):
         eV = 0 - self.cy
         self.twist.linear.x = (-0.3 * eV) + ((eV-self.eV_prev) * -10)
@@ -111,7 +88,7 @@ class CentroidNav(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    listener = CentroidNav()
+    listener = Navigation()
     rclpy.spin(listener)
     listener.destroy_node()
     rclpy.shutdown()
