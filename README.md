@@ -1,4 +1,4 @@
-# ROS 2 Hybrid Navigation
+# ROS 2 Centroid Navigation
 
 A ROS 2 package for mobile robot navigation. The main node provides a hybrid controller that combines go-to-point navigation with reactive obstacle avoidance using Lidar data.
 
