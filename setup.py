@@ -23,6 +23,7 @@ setup(
             'centroid_nav = centroid_nav.centroid_nav:main',
             'navigation = centroid_nav.navigation:main',
             'follow_point = centroid_nav.follow_point:main',
+            'graph = centroid_nav.graph:main',
         ],
     },
 )
