@@ -34,20 +34,25 @@ class Navigation(Node):
         # Lidar data
         self.ranges = []
         self.range_min = 0.0
-        self.range_max = 0.0
+        self.range_max = 1.5
         self.angle_min = 0.0
         self.angle_max = 0.0
         self.angle_increment = 0.0
         self.cx = 0.0
-        #self.cy = 0.0
+        self.cy = 0.0
         self.eW_prev = 0.0
         self.eV_prev = 0.0
+
+        self.obstacle = False
+        self.obstacle_detected_counter = 0
+        self.path_clear_counter = 0
+        self.MIN_STEPS_FOR_STATE_CHANGE = 5
 
     def callback_scan(self, data):
         # Store raw data properties
         self.ranges = list(data.ranges[:])
         self.range_min = data.range_min
-        self.range_max = data.range_max
+        #self.range_max = data.range_max
         self.angle_min = data.angle_min
         self.angle_max = data.angle_max
         self.angle_increment = data.angle_increment
@@ -55,9 +60,9 @@ class Navigation(Node):
         # Create a full array of angles corresponding to the raw ranges
         full_angles = np.arange(self.angle_min, self.angle_max, self.angle_increment)
 
-        # Define the desired angle limits for the front view
-        front_angle_start = pi
-        front_angle_end = 0
+        # Define the desired angle limits for the front view 120 degrees
+        front_angle_start = -pi/2 -pi/3 #-pi
+        front_angle_end = -pi/2 +pi/3 #0
 
         # Calculate the start and end indices for the front view slice
         # We check if angle_increment is positive to avoid division by zero
@@ -87,10 +92,13 @@ class Navigation(Node):
 
         if sda > 0:
             self.cx = sxda / sda
-            #self.cy = ((sda**2)/2)/sda
+            self.cy = ((sda**2)/2)/sda
+            #print(f"Centroid: cx={self.cx}, cy={self.cy}")
         else:
             self.cx = 0.0
-            #self.cy = 0.0
+            self.cy = 0.0
+            #print(f"sda = {sda}")
+            #print("No valid centroid found.")
 
         #Aquí me quedé
 
@@ -112,24 +120,55 @@ class Navigation(Node):
         # self.get_logger().info(f'Orientación actual: x={orientation.x}, y={orientation.y}, z={orientation.z}, w={orientation.w}')
 
     def control(self):
-        dir_diff = self.direction - self.curr_direction
-        if dir_diff > pi:
-            dir_diff -= 2 * pi
-        elif dir_diff < -pi:
-            dir_diff += 2 * pi
 
-        if dir_diff > 0.1 or dir_diff < -0.1:
-            self.twist.angular.z = 0.3 * dir_diff
-            self.twist.linear.x = 0.0
-            # print(f"Dir diff: {dir_diff}")
-        else: # Direccion correcta, avanzar!
-            # print(f"Dir difffffdafsada: {dir_diff}")
-            self.twist.angular.z = 0.0
+        if (self.cx < (-pi / 2)-0.05 or self.cx > (-pi / 2)+0.05):
+            print("Obstáculo detectado, evitando...")
+            self.obstacle_detected_counter += 1
+            self.path_clear_counter = 0
+        else:
+            print("Camino libre, avanzando hacia el objetivo...")
+            print(f"distancia al objetivo: {self.distance}")
+            self.path_clear_counter += 1
+            self.obstacle_detected_counter = 0
 
-            if self.distance > 0.05:
-                self.twist.linear.x = 0.5 * self.distance
-            else:
+        if self.obstacle_detected_counter >= self.MIN_STEPS_FOR_STATE_CHANGE:
+            self.obstacle = True
+        elif self.path_clear_counter >= self.MIN_STEPS_FOR_STATE_CHANGE:
+            self.obstacle = False
+
+        if not self.obstacle:
+            dir_diff = self.direction - self.curr_direction
+            if dir_diff > pi:
+                dir_diff -= 2 * pi
+            elif dir_diff < -pi:
+                dir_diff += 2 * pi
+
+            if dir_diff > 0.1 or dir_diff < -0.1:
+                self.twist.angular.z = 0.3 * dir_diff
                 self.twist.linear.x = 0.0
+                # print(f"Dir diff: {dir_diff}")
+            else:  # Direccion correcta, avanzar!
+                # print(f"Dir difffffdafsada: {dir_diff}")
+                self.twist.angular.z = 0.0
+
+                if self.distance > 0.1:
+                    self.twist.linear.x = 0.5 * self.distance
+                else:
+                    self.twist.linear.x = 0.0
+
+        else:
+            eV = 0 - self.cy
+            self.twist.linear.x = (-0.3 * eV) + ((eV - self.eV_prev) * -10)
+            self.eV_prev = eV
+
+            eW = -pi / 2 - self.cx  # Error set
+            self.twist.angular.z = (-20 * eW) + ((eW - self.eW_prev) * 5)
+            self.eW_prev = eW
+
+        if self.distance <= 0.1:
+            self.twist.linear.x = 0.0
+            self.twist.angular.z = 0.0
+            print("Llegué al objetivo")
 
         self.publisher_vel.publish(self.twist)
 

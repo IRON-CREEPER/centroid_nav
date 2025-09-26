@@ -59,8 +59,10 @@ class FollowPoint(Node):
             self.twist.angular.z = 0.0
 
             if self.distance > 0.05:
+                print(f"Avanzando hacia el objetivo, distancia: {self.distance}")
                 self.twist.linear.x = 0.5 * self.distance
             else:
+                print("Llegué al objetivo")
                 self.twist.linear.x = 0.0
 
         self.publisher_vel.publish(self.twist)
