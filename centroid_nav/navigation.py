@@ -121,7 +121,7 @@ class Navigation(Node):
 
     def control(self):
 
-        if (self.cx < (-pi / 2)-0.05 or self.cx > (-pi / 2)+0.05):
+        if (self.cx < (-pi / 2)-0.01 or self.cx > (-pi / 2)+0.01):
             print("Obstáculo detectado, evitando...")
             self.obstacle_detected_counter += 1
             self.path_clear_counter = 0
@@ -130,6 +130,9 @@ class Navigation(Node):
             print(f"distancia al objetivo: {self.distance}")
             self.path_clear_counter += 1
             self.obstacle_detected_counter = 0
+
+        if self.position is not None:
+            print(f"Posicion actual: x={self.position.x}, y={self.position.y}")
 
         if self.obstacle_detected_counter >= self.MIN_STEPS_FOR_STATE_CHANGE:
             self.obstacle = True
